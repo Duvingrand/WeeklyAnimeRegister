@@ -7,25 +7,27 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using ProyectoPropio.Models;
 using ProyectoPropio.data;
+using Microsoft.AspNetCore.Http;
+using System.IO;
 
-namespace ProyectoPropio.Controllers
+namespace ProyectoPropio.Views.Seried
 {
-    public class SerieController : Controller
+    public class SeriedController : Controller
     {
         private readonly ApplicationDbContext _context;
 
-        public SerieController(ApplicationDbContext context)
+        public SeriedController(ApplicationDbContext context)
         {
             _context = context;
         }
 
-        // GET: Serie
+        // GET: Seried
         public async Task<IActionResult> Index()
         {
             return View(await _context.Series.ToListAsync());
         }
 
-        // GET: Serie/Details/5
+        // GET: Seried/Details/5
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -43,21 +45,36 @@ namespace ProyectoPropio.Controllers
             return View(serie);
         }
 
-        // GET: Serie/Create
+        // GET: Seried/Create
         public IActionResult Create()
         {
             return View();
         }
 
-        // POST: Serie/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        // POST: Seried/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Name,Season,ActualEpisode,TotalOfEpisode,NetflixURL,ImagePath")] Serie serie)
+        public async Task<IActionResult> Create([Bind("Id,Name,Season,ActualEpisode,TotalOfEpisode,NetflixURL")] Serie serie, IFormFile ImagePath)
         {
             if (ModelState.IsValid)
             {
+                // Procesar el archivo de imagen si se ha cargado uno
+                if (ImagePath != null && ImagePath.Length > 0)
+                {
+                    // Definir la ruta donde se guardará la imagen
+                    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images", ImagePath.FileName);
+
+                    // Guardar el archivo en la carpeta wwwroot/images
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await ImagePath.CopyToAsync(stream);
+                    }
+
+                    // Asignar la ruta de la imagen al modelo
+                    serie.ImagePath = "/images/" + ImagePath.FileName;
+                }
+
+                // Guardar el objeto Serie en la base de datos
                 _context.Add(serie);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
@@ -65,7 +82,7 @@ namespace ProyectoPropio.Controllers
             return View(serie);
         }
 
-        // GET: Serie/Edit/5
+        // GET: Seried/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -81,12 +98,10 @@ namespace ProyectoPropio.Controllers
             return View(serie);
         }
 
-        // POST: Serie/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        // POST: Seried/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Season,ActualEpisode,TotalOfEpisode,NetflixURL,ImagePath")] Serie serie)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Season,ActualEpisode,TotalOfEpisode,NetflixURL,ImagePath")] Serie serie, IFormFile ImagePath)
         {
             if (id != serie.Id)
             {
@@ -97,6 +112,21 @@ namespace ProyectoPropio.Controllers
             {
                 try
                 {
+                    // Procesar el archivo de imagen si se ha cargado uno
+                    if (ImagePath != null && ImagePath.Length > 0)
+                    {
+                        var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images", ImagePath.FileName);
+                        
+                        // Guardar el archivo en la carpeta wwwroot/images
+                        using (var stream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await ImagePath.CopyToAsync(stream);
+                        }
+
+                        // Asignar la ruta de la imagen al modelo
+                        serie.ImagePath = "/images/" + ImagePath.FileName;
+                    }
+
                     _context.Update(serie);
                     await _context.SaveChangesAsync();
                 }
@@ -116,7 +146,7 @@ namespace ProyectoPropio.Controllers
             return View(serie);
         }
 
-        // GET: Serie/Delete/5
+        // GET: Seried/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -134,7 +164,7 @@ namespace ProyectoPropio.Controllers
             return View(serie);
         }
 
-        // POST: Serie/Delete/5
+        // POST: Seried/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
@@ -155,3 +185,4 @@ namespace ProyectoPropio.Controllers
         }
     }
 }
+
