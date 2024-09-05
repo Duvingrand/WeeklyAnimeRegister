@@ -1,9 +1,12 @@
-using Microsoft.AspNetCore.Mvc;
-using ProyectoPropio.Models;
-using ProyectoPropio.data;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using ProyectoPropio.Models;
+using ProyectoPropio.data;
 
 namespace ProyectoPropio.Controllers
 {
@@ -19,13 +22,17 @@ namespace ProyectoPropio.Controllers
         // GET: Serie
         public async Task<IActionResult> Index()
         {
-            var series = await _context.Series.ToListAsync();
-            return View(series);
+            return View(await _context.Series.ToListAsync());
         }
 
         // GET: Serie/Details/5
-        public async Task<IActionResult> Details(int id)
+        public async Task<IActionResult> Details(int? id)
         {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
             var serie = await _context.Series
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (serie == null)
@@ -36,9 +43,36 @@ namespace ProyectoPropio.Controllers
             return View(serie);
         }
 
-        // GET: Serie/Edit/5
-        public async Task<IActionResult> Edit(int id)
+        // GET: Serie/Create
+        public IActionResult Create()
         {
+            return View();
+        }
+
+        // POST: Serie/Create
+        // To protect from overposting attacks, enable the specific properties you want to bind to.
+        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create([Bind("Id,Name,Season,ActualEpisode,TotalOfEpisode,NetflixURL,ImagePath")] Serie serie)
+        {
+            if (ModelState.IsValid)
+            {
+                _context.Add(serie);
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
+            }
+            return View(serie);
+        }
+
+        // GET: Serie/Edit/5
+        public async Task<IActionResult> Edit(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
             var serie = await _context.Series.FindAsync(id);
             if (serie == null)
             {
@@ -48,6 +82,8 @@ namespace ProyectoPropio.Controllers
         }
 
         // POST: Serie/Edit/5
+        // To protect from overposting attacks, enable the specific properties you want to bind to.
+        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Season,ActualEpisode,TotalOfEpisode,NetflixURL,ImagePath")] Serie serie)
@@ -78,6 +114,39 @@ namespace ProyectoPropio.Controllers
                 return RedirectToAction(nameof(Index));
             }
             return View(serie);
+        }
+
+        // GET: Serie/Delete/5
+        public async Task<IActionResult> Delete(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var serie = await _context.Series
+                .FirstOrDefaultAsync(m => m.Id == id);
+            if (serie == null)
+            {
+                return NotFound();
+            }
+
+            return View(serie);
+        }
+
+        // POST: Serie/Delete/5
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
+            var serie = await _context.Series.FindAsync(id);
+            if (serie != null)
+            {
+                _context.Series.Remove(serie);
+            }
+
+            await _context.SaveChangesAsync();
+            return RedirectToAction(nameof(Index));
         }
 
         private bool SerieExists(int id)
