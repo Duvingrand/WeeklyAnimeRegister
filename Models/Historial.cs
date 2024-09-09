@@ -12,8 +12,14 @@ namespace ProyectoPropio.Models
     {
         [Key]
         public int Id { get; set; }
-        public List<Serie>? Dropeados  { get; set; }
-        public List<Serie>? Terminados  { get; set; }
-        public List<Serie>? Proximos  { get; set; }
+
+        // Relación con las series dropeadas
+        public List<Serie>? Dropeados { get; set; } = new List<Serie>();
+        
+        // Relación con las series terminadas
+        public List<Serie>? Terminados { get; set; } = new List<Serie>();
+        
+        // Relación con las series proximas
+        public List<Serie>? Proximos { get; set; } = new List<Serie>();
     }
 }
