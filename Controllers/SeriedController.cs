@@ -7,10 +7,8 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using ProyectoPropio.Models;
 using ProyectoPropio.data;
-using Microsoft.AspNetCore.Http;
-using System.IO;
 
-namespace ProyectoPropio.Views.Seried
+namespace ProyectoPropio.Controllers
 {
     public class SeriedController : Controller
     {
@@ -52,29 +50,14 @@ namespace ProyectoPropio.Views.Seried
         }
 
         // POST: Seried/Create
+        // To protect from overposting attacks, enable the specific properties you want to bind to.
+        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Name,Season,ActualEpisode,TotalOfEpisode,NetflixURL")] Serie serie, IFormFile ImagePath)
+        public async Task<IActionResult> Create([Bind("Id,Name,Season,ActualEpisode,TotalOfEpisode,NetflixURL,ImagePath,HistorialId")] Serie serie)
         {
             if (ModelState.IsValid)
             {
-                // Procesar el archivo de imagen si se ha cargado uno
-                if (ImagePath != null && ImagePath.Length > 0)
-                {
-                    // Definir la ruta donde se guardará la imagen
-                    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images", ImagePath.FileName);
-
-                    // Guardar el archivo en la carpeta wwwroot/images
-                    using (var stream = new FileStream(filePath, FileMode.Create))
-                    {
-                        await ImagePath.CopyToAsync(stream);
-                    }
-
-                    // Asignar la ruta de la imagen al modelo
-                    serie.ImagePath = "/images/" + ImagePath.FileName;
-                }
-
-                // Guardar el objeto Serie en la base de datos
                 _context.Add(serie);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
@@ -99,9 +82,11 @@ namespace ProyectoPropio.Views.Seried
         }
 
         // POST: Seried/Edit/5
+        // To protect from overposting attacks, enable the specific properties you want to bind to.
+        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Season,ActualEpisode,TotalOfEpisode,NetflixURL,ImagePath")] Serie serie, IFormFile ImagePath)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Season,ActualEpisode,TotalOfEpisode,NetflixURL,ImagePath,HistorialId")] Serie serie)
         {
             if (id != serie.Id)
             {
@@ -112,21 +97,6 @@ namespace ProyectoPropio.Views.Seried
             {
                 try
                 {
-                    // Procesar el archivo de imagen si se ha cargado uno
-                    if (ImagePath != null && ImagePath.Length > 0)
-                    {
-                        var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images", ImagePath.FileName);
-                        
-                        // Guardar el archivo en la carpeta wwwroot/images
-                        using (var stream = new FileStream(filePath, FileMode.Create))
-                        {
-                            await ImagePath.CopyToAsync(stream);
-                        }
-
-                        // Asignar la ruta de la imagen al modelo
-                        serie.ImagePath = "/images/" + ImagePath.FileName;
-                    }
-
                     _context.Update(serie);
                     await _context.SaveChangesAsync();
                 }
@@ -185,4 +155,3 @@ namespace ProyectoPropio.Views.Seried
         }
     }
 }
-

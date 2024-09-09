@@ -32,14 +32,10 @@ namespace ProyectoPropio.Models
         [Required(ErrorMessage = "La URL de Netflix es obligatoria")]
         [Url(ErrorMessage = "La URL de Netflix no es válida")]
         public required string NetflixURL { get; set; }
-
         public string? ImagePath { get; set; } // Esto no es obligatorio
 
         // Clave foránea a Historial, y diferenciación de la lista
-        public int? HistorialId { get; set; } // Esto indica a qué Historial pertenece
-        public Historial? Historial { get; set; }
-
-        public string? ListType { get; set; } // Dropeados, Terminados, Proximos
+        public int HistorialId { get; set; } // Esto indica a qué Historial pertenece // Dropeados, Terminados, Proximos
     }
 }
 
