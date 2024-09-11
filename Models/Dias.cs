@@ -18,10 +18,6 @@ namespace ProyectoPropio.Models
         public required string Name { get; set; }
 
         public List<Serie>? Historial { get; set; }
-        public int AnimeOfTheDayId { get; set; } // Clave foránea
-
-        [ForeignKey("AnimeOfTheDayId")]
-        public required virtual Serie AnimeOfTheDay { get; set; } // Relación con el modelo Anime
 
     }
 }

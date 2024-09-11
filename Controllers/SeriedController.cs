@@ -46,24 +46,76 @@ namespace ProyectoPropio.Controllers
         // GET: Seried/Create
         public IActionResult Create()
         {
+            // Obtener la lista de días que no están ocupados
+            var diasNoOcupados = _context.Dias
+                .Where(d => !_context.Series.Any(s => s.DiaId == d.Id))
+                .ToList();
+
+            ViewBag.Dias = new SelectList(diasNoOcupados, "Id", "Name");
             return View();
         }
 
         // POST: Seried/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Name,Season,ActualEpisode,TotalOfEpisode,NetflixURL,ImagePath,HistorialId")] Serie serie)
+[HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> Create([Bind("Id,Name,Season,ActualEpisode,TotalOfEpisode,NetflixURL,DiaId")] Serie serie, IFormFile image)
+{
+    if (ModelState.IsValid)
+    {
+        // Comprobar si el archivo ha sido subido
+        if (image != null && image.Length > 0)
         {
-            if (ModelState.IsValid)
+            // Definir la carpeta donde se guardará la imagen (wwwroot/imgs)
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "imgs");
+
+            // Asegurar que la carpeta existe
+            if (!Directory.Exists(uploadsFolder))
             {
-                _context.Add(serie);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                Directory.CreateDirectory(uploadsFolder);
             }
-            return View(serie);
+
+            // Crear un nombre único para la imagen
+            var uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(image.FileName);
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            try
+            {
+                // Guardar la imagen en el servidor
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await image.CopyToAsync(fileStream);
+                }
+
+                // Guardar la ruta relativa en la propiedad ImagePath
+                serie.ImagePath = "/imgs/" + uniqueFileName;
+            }
+            catch (Exception)
+                    {
+                // Manejar excepciones de archivo aquí (opcional)
+                ModelState.AddModelError("", "No se pudo cargar la imagen. Inténtelo de nuevo.");
+                return View(serie);
+            }
         }
+
+        // Añadir la serie al contexto y guardar los cambios
+        _context.Add(serie);
+        await _context.SaveChangesAsync();
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    // Re-cargar la lista de días en caso de error
+    var diasNoOcupados = _context.Dias
+        .Where(d => !_context.Series.Any(s => s.DiaId == d.Id))
+        .ToList();
+    ViewBag.Dias = new SelectList(diasNoOcupados, "Id", "Name");
+
+    return View(serie);
+}
+
+
 
         // GET: Seried/Edit/5
         public async Task<IActionResult> Edit(int? id)

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace ProyectoPropio.Migrations
 {
     /// <inheritdoc />
-    public partial class CreacionModelos : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -21,8 +21,7 @@ namespace ProyectoPropio.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     Name = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    AnimeOfTheDayId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4")
                 },
                 constraints: table =>
                 {
@@ -44,47 +43,33 @@ namespace ProyectoPropio.Migrations
                     TotalOfEpisode = table.Column<int>(type: "int", nullable: false),
                     NetflixURL = table.Column<string>(type: "longtext", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    ImagePath = table.Column<string>(type: "longtext", nullable: false)
+                    ImagePath = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    DiasId = table.Column<int>(type: "int", nullable: true)
+                    DiaId = table.Column<int>(type: "int", nullable: false),
+                    Estado = table.Column<string>(type: "varchar(20)", maxLength: 20, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4")
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_series", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_series_dias_DiasId",
-                        column: x => x.DiasId,
+                        name: "FK_series_dias_DiaId",
+                        column: x => x.DiaId,
                         principalTable: "dias",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateIndex(
-                name: "IX_dias_AnimeOfTheDayId",
-                table: "dias",
-                column: "AnimeOfTheDayId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_series_DiasId",
+                name: "IX_series_DiaId",
                 table: "series",
-                column: "DiasId");
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_dias_series_AnimeOfTheDayId",
-                table: "dias",
-                column: "AnimeOfTheDayId",
-                principalTable: "series",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
+                column: "DiaId");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_dias_series_AnimeOfTheDayId",
-                table: "dias");
-
             migrationBuilder.DropTable(
                 name: "series");
 

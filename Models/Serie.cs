@@ -34,8 +34,15 @@ namespace ProyectoPropio.Models
         public required string NetflixURL { get; set; }
         public string? ImagePath { get; set; } // Esto no es obligatorio
 
-        // Clave foránea a Historial, y diferenciación de la lista
-        public int HistorialId { get; set; } // Esto indica a qué Historial pertenece // Dropeados, Terminados, Proximos
+        // Clave foránea a Dia
+        public int DiaId { get; set; }
+        [ForeignKey("DiaId")]
+        public Dias? Dia { get; set; } // Relación con el modelo Dia
+
+        // Estado de la serie
+        [StringLength(20, ErrorMessage = "El estado no puede exceder los 20 caracteres")]
+        public string? Estado { get; set; } // Próximo, Completado, Dropeado
     }
+
 }
 
