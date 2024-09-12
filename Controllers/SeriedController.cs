@@ -20,10 +20,15 @@ namespace ProyectoPropio.Controllers
         }
 
         // GET: Seried
+        /*Este método obtiene una lista de todas las series almacenadas 
+        en la base de datos y la envía a la vista correspondiente para ser mostrada. 
+        Usa ToListAsync() para ejecutar la consulta de manera asincrónica.*/
         public async Task<IActionResult> Index()
         {
             return View(await _context.Series.ToListAsync());
         }
+
+
 
         // GET: Seried/Details/5
         public async Task<IActionResult> Details(int? id)
@@ -117,56 +122,69 @@ public async Task<IActionResult> Create([Bind("Id,Name,Season,ActualEpisode,Tota
 
 
 
-        // GET: Seried/Edit/5
-        public async Task<IActionResult> Edit(int? id)
+       // GET: Seried/Edit/5
+public async Task<IActionResult> Edit(int? id)
+{
+    if (id == null)
+    {
+        return NotFound();
+    }
+
+    var serie = await _context.Series.FindAsync(id);
+    if (serie == null)
+    {
+        return NotFound();
+    }
+
+    // Obtener la lista de días que no están ocupados o incluir el día actual de la serie
+    var diasNoOcupados = _context.Dias
+        .Where(d => !_context.Series.Any(s => s.DiaId == d.Id) || d.Id == serie.DiaId)
+        .ToList();
+
+    ViewBag.Dias = new SelectList(diasNoOcupados, "Id", "Name", serie.DiaId); // Preselecciona el día actual
+    return View(serie);
+}
+
+// POST: Seried/Edit/5
+[HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Season,ActualEpisode,TotalOfEpisode,NetflixURL,ImagePath,DiaId")] Serie serie)
+{
+    if (id != serie.Id)
+    {
+        return NotFound();
+    }
+
+    if (ModelState.IsValid)
+    {
+        try
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var serie = await _context.Series.FindAsync(id);
-            if (serie == null)
-            {
-                return NotFound();
-            }
-            return View(serie);
+            _context.Update(serie);
+            await _context.SaveChangesAsync();
         }
-
-        // POST: Seried/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Season,ActualEpisode,TotalOfEpisode,NetflixURL,ImagePath,HistorialId")] Serie serie)
+        catch (DbUpdateConcurrencyException)
         {
-            if (id != serie.Id)
+            if (!SerieExists(serie.Id))
             {
                 return NotFound();
             }
-
-            if (ModelState.IsValid)
+            else
             {
-                try
-                {
-                    _context.Update(serie);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!SerieExists(serie.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
+                throw;
             }
-            return View(serie);
         }
+        return RedirectToAction(nameof(Index));
+    }
+
+    // Re-cargar la lista de días en caso de error
+    var diasNoOcupados = _context.Dias
+        .Where(d => !_context.Series.Any(s => s.DiaId == d.Id) || d.Id == serie.DiaId)
+        .ToList();
+
+    ViewBag.Dias = new SelectList(diasNoOcupados, "Id", "Name", serie.DiaId);
+    return View(serie);
+}
+
 
         // GET: Seried/Delete/5
         public async Task<IActionResult> Delete(int? id)
