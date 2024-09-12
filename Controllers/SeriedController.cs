@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -56,66 +58,52 @@ namespace ProyectoPropio.Controllers
         }
 
         // POST: Seried/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-[HttpPost]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> Create([Bind("Id,Name,Season,ActualEpisode,TotalOfEpisode,NetflixURL,DiaId")] Serie serie, IFormFile image)
-{
-    if (ModelState.IsValid)
-    {
-        // Comprobar si el archivo ha sido subido
-        if (image != null && image.Length > 0)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create([Bind("Id,Name,Season,ActualEpisode,TotalOfEpisode,NetflixURL,DiaId")] Serie serie, IFormFile? image)
         {
-            // Definir la carpeta donde se guardará la imagen (wwwroot/imgs)
-            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "imgs");
-
-            // Asegurar que la carpeta existe
-            if (!Directory.Exists(uploadsFolder))
+            if (ModelState.IsValid)
             {
-                Directory.CreateDirectory(uploadsFolder);
-            }
-
-            // Crear un nombre único para la imagen
-            var uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(image.FileName);
-            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-            try
-            {
-                // Guardar la imagen en el servidor
-                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                if (image != null && image.Length > 0)
                 {
-                    await image.CopyToAsync(fileStream);
+                    // Definir la carpeta de carga
+                    var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "imgs");
+                    if (!Directory.Exists(uploadsFolder))
+                    {
+                        Directory.CreateDirectory(uploadsFolder);
+                    }
+
+                    var uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(image.FileName);
+                    var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                    try
+                    {
+                        using (var fileStream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await image.CopyToAsync(fileStream);
+                        }
+
+                        serie.ImagePath = "/imgs/" + uniqueFileName;
+                    }
+                    catch (Exception ex)
+                    {
+                        ModelState.AddModelError("", $"No se pudo cargar la imagen. Error: {ex.Message}");
+                        return View(serie);
+                    }
                 }
 
-                // Guardar la ruta relativa en la propiedad ImagePath
-                serie.ImagePath = "/imgs/" + uniqueFileName;
+                _context.Add(serie);
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
             }
-            catch (Exception)
-                    {
-                // Manejar excepciones de archivo aquí (opcional)
-                ModelState.AddModelError("", "No se pudo cargar la imagen. Inténtelo de nuevo.");
-                return View(serie);
-            }
+
+            var diasNoOcupados = _context.Dias
+                .Where(d => !_context.Series.Any(s => s.DiaId == d.Id))
+                .ToList();
+            ViewBag.Dias = new SelectList(diasNoOcupados, "Id", "Name");
+
+            return View(serie);
         }
-
-        // Añadir la serie al contexto y guardar los cambios
-        _context.Add(serie);
-        await _context.SaveChangesAsync();
-
-        return RedirectToAction(nameof(Index));
-    }
-
-    // Re-cargar la lista de días en caso de error
-    var diasNoOcupados = _context.Dias
-        .Where(d => !_context.Series.Any(s => s.DiaId == d.Id))
-        .ToList();
-    ViewBag.Dias = new SelectList(diasNoOcupados, "Id", "Name");
-
-    return View(serie);
-}
-
-
 
         // GET: Seried/Edit/5
         public async Task<IActionResult> Edit(int? id)
@@ -130,15 +118,16 @@ public async Task<IActionResult> Create([Bind("Id,Name,Season,ActualEpisode,Tota
             {
                 return NotFound();
             }
+
+            // Obtener la lista de días
+            ViewBag.Dias = new SelectList(await _context.Dias.ToListAsync(), "Id", "Name", serie.DiaId);
             return View(serie);
         }
 
         // POST: Seried/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Season,ActualEpisode,TotalOfEpisode,NetflixURL,ImagePath,HistorialId")] Serie serie)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Season,ActualEpisode,TotalOfEpisode,NetflixURL,ImagePath,DiaId")] Serie serie, IFormFile? image)
         {
             if (id != serie.Id)
             {
@@ -149,6 +138,34 @@ public async Task<IActionResult> Create([Bind("Id,Name,Season,ActualEpisode,Tota
             {
                 try
                 {
+                    if (image != null && image.Length > 0)
+                    {
+                        // Definir la carpeta de carga
+                        var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "imgs");
+                        if (!Directory.Exists(uploadsFolder))
+                        {
+                            Directory.CreateDirectory(uploadsFolder);
+                        }
+
+                        var uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(image.FileName);
+                        var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                        try
+                        {
+                            using (var fileStream = new FileStream(filePath, FileMode.Create))
+                            {
+                                await image.CopyToAsync(fileStream);
+                            }
+
+                            serie.ImagePath = "/imgs/" + uniqueFileName;
+                        }
+                        catch (Exception ex)
+                        {
+                            ModelState.AddModelError("", $"No se pudo cargar la imagen. Error: {ex.Message}");
+                            return View(serie);
+                        }
+                    }
+
                     _context.Update(serie);
                     await _context.SaveChangesAsync();
                 }
@@ -165,6 +182,9 @@ public async Task<IActionResult> Create([Bind("Id,Name,Season,ActualEpisode,Tota
                 }
                 return RedirectToAction(nameof(Index));
             }
+
+            // Re-cargar la lista de días en caso de error
+            ViewBag.Dias = new SelectList(await _context.Dias.ToListAsync(), "Id", "Name", serie.DiaId);
             return View(serie);
         }
 
