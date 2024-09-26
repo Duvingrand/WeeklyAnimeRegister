@@ -25,7 +25,18 @@ namespace ProyectoPropio.Controllers
         Usa ToListAsync() para ejecutar la consulta de manera asincrónica.*/
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Series.ToListAsync());
+            var series = await _context.Series
+    .Include(s => s.Dia) // Incluir la entidad Dia
+    .ToListAsync();
+            if (series == null || series.Count <= 0)
+            {
+                return NotFound();
+            }
+            foreach (var serie in series)
+            {
+                serie.ImagePath = $"{Request.Scheme}://{Request.Host}/imgs/{Path.GetFileName(serie.ImagePath)}";
+            }
+            return View(series);
         }
 
 
@@ -44,6 +55,7 @@ namespace ProyectoPropio.Controllers
             {
                 return NotFound();
             }
+            serie.ImagePath = $"{Request.Scheme}://{Request.Host}/imgs/{Path.GetFileName(serie.ImagePath)}";
 
             return View(serie);
         }
@@ -55,7 +67,6 @@ namespace ProyectoPropio.Controllers
             var diasNoOcupados = _context.Dias
                 .Where(d => !_context.Series.Any(s => s.DiaId == d.Id))
                 .ToList();
-
             ViewBag.Dias = new SelectList(diasNoOcupados, "Id", "Name");
             return View();
         }
@@ -63,127 +74,127 @@ namespace ProyectoPropio.Controllers
         // POST: Seried/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-[HttpPost]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> Create([Bind("Id,Name,Season,ActualEpisode,TotalOfEpisode,NetflixURL,DiaId")] Serie serie, IFormFile image)
-{
-    if (ModelState.IsValid)
-    {
-        // Comprobar si el archivo ha sido subido
-        if (image != null && image.Length > 0)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create([Bind("Id,Name,Season,ActualEpisode,TotalOfEpisode,NetflixURL,DiaId,Estado")] Serie serie, IFormFile image)
         {
-            // Definir la carpeta donde se guardará la imagen (wwwroot/imgs)
-            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "imgs");
-
-            // Asegurar que la carpeta existe
-            if (!Directory.Exists(uploadsFolder))
+            if (ModelState.IsValid)
             {
-                Directory.CreateDirectory(uploadsFolder);
-            }
-
-            // Crear un nombre único para la imagen
-            var uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(image.FileName);
-            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-            try
-            {
-                // Guardar la imagen en el servidor
-                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                // Comprobar si el archivo ha sido subido
+                if (image != null && image.Length > 0)
                 {
-                    await image.CopyToAsync(fileStream);
+                    // Definir la carpeta donde se guardará la imagen (wwwroot/imgs)
+                    var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "imgs");
+
+                    // Asegurar que la carpeta existe
+                    if (!Directory.Exists(uploadsFolder))
+                    {
+                        Directory.CreateDirectory(uploadsFolder);
+                    }
+
+                    // Crear un nombre único para la imagen
+                    var uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(image.FileName);
+                    var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                    try
+                    {
+                        // Guardar la imagen en el servidor
+                        using (var fileStream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await image.CopyToAsync(fileStream);
+                        }
+
+                        // Guardar la ruta relativa en la propiedad ImagePath
+                        serie.ImagePath = "/imgs/" + uniqueFileName;
+                    }
+                    catch (Exception)
+                    {
+                        // Manejar excepciones de archivo aquí (opcional)
+                        ModelState.AddModelError("", "No se pudo cargar la imagen. Inténtelo de nuevo.");
+                        return View(serie);
+                    }
                 }
 
-                // Guardar la ruta relativa en la propiedad ImagePath
-                serie.ImagePath = "/imgs/" + uniqueFileName;
+                // Añadir la serie al contexto y guardar los cambios
+                _context.Add(serie);
+                await _context.SaveChangesAsync();
+
+                return RedirectToAction(nameof(Index));
             }
-            catch (Exception)
-                    {
-                // Manejar excepciones de archivo aquí (opcional)
-                ModelState.AddModelError("", "No se pudo cargar la imagen. Inténtelo de nuevo.");
-                return View(serie);
-            }
+
+            // Re-cargar la lista de días en caso de error
+            var diasNoOcupados = _context.Dias
+                .Where(d => !_context.Series.Any(s => s.DiaId == d.Id))
+                .ToList();
+            ViewBag.Dias = new SelectList(diasNoOcupados, "Id", "Name");
+
+            return View(serie);
         }
 
-        // Añadir la serie al contexto y guardar los cambios
-        _context.Add(serie);
-        await _context.SaveChangesAsync();
-
-        return RedirectToAction(nameof(Index));
-    }
-
-    // Re-cargar la lista de días en caso de error
-    var diasNoOcupados = _context.Dias
-        .Where(d => !_context.Series.Any(s => s.DiaId == d.Id))
-        .ToList();
-    ViewBag.Dias = new SelectList(diasNoOcupados, "Id", "Name");
-
-    return View(serie);
-}
 
 
-
-       // GET: Seried/Edit/5
-public async Task<IActionResult> Edit(int? id)
-{
-    if (id == null)
-    {
-        return NotFound();
-    }
-
-    var serie = await _context.Series.FindAsync(id);
-    if (serie == null)
-    {
-        return NotFound();
-    }
-
-    // Obtener la lista de días que no están ocupados o incluir el día actual de la serie
-    var diasNoOcupados = _context.Dias
-        .Where(d => !_context.Series.Any(s => s.DiaId == d.Id) || d.Id == serie.DiaId)
-        .ToList();
-
-    ViewBag.Dias = new SelectList(diasNoOcupados, "Id", "Name", serie.DiaId); // Preselecciona el día actual
-    return View(serie);
-}
-
-// POST: Seried/Edit/5
-[HttpPost]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Season,ActualEpisode,TotalOfEpisode,NetflixURL,ImagePath,DiaId")] Serie serie)
-{
-    if (id != serie.Id)
-    {
-        return NotFound();
-    }
-
-    if (ModelState.IsValid)
-    {
-        try
+        // GET: Seried/Edit/5
+        public async Task<IActionResult> Edit(int? id)
         {
-            _context.Update(serie);
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!SerieExists(serie.Id))
+            if (id == null)
             {
                 return NotFound();
             }
-            else
+
+            var serie = await _context.Series.FindAsync(id);
+            if (serie == null)
             {
-                throw;
+                return NotFound();
             }
+
+            // Obtener la lista de días que no están ocupados o incluir el día actual de la serie
+            var diasNoOcupados = _context.Dias
+                .Where(d => !_context.Series.Any(s => s.DiaId == d.Id) || d.Id == serie.DiaId)
+                .ToList();
+
+            ViewBag.Dias = new SelectList(diasNoOcupados, "Id", "Name", serie.DiaId); // Preselecciona el día actual
+            return View(serie);
         }
-        return RedirectToAction(nameof(Index));
-    }
 
-    // Re-cargar la lista de días en caso de error
-    var diasNoOcupados = _context.Dias
-        .Where(d => !_context.Series.Any(s => s.DiaId == d.Id) || d.Id == serie.DiaId)
-        .ToList();
+        // POST: Seried/Edit/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Season,ActualEpisode,TotalOfEpisode,NetflixURL,ImagePath,DiaId,Estado")] Serie serie)
+        {
+            if (id != serie.Id)
+            {
+                return NotFound();
+            }
 
-    ViewBag.Dias = new SelectList(diasNoOcupados, "Id", "Name", serie.DiaId);
-    return View(serie);
-}
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    _context.Update(serie);
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!SerieExists(serie.Id))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Re-cargar la lista de días en caso de error
+            var diasNoOcupados = _context.Dias
+                .Where(d => !_context.Series.Any(s => s.DiaId == d.Id) || d.Id == serie.DiaId)
+                .ToList();
+
+            ViewBag.Dias = new SelectList(diasNoOcupados, "Id", "Name", serie.DiaId);
+            return View(serie);
+        }
 
 
         // GET: Seried/Delete/5
