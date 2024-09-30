@@ -1,51 +1,92 @@
-﻿@model IEnumerable<ProyectoPropio.Models.Serie>
+@model IEnumerable<ProyectoPropio.Models.Serie>
 
 @{
-  ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Index";
 }
 
-<div class="text-center">
-  <div id="carouselExample" class="carousel slide" data-bs-ride="carousel">
-    <div class="carousel-inner">
-      @foreach (var item in Model)
-      {
-        <div class="d-flex justify-content-center carousel-item @(Model.First() == item ? "active" : "")">
-          <div class="card" style="width: 18rem;">
-            <img class="card-img-top" src="@item.ImagePath" aalt="@item.Name">
-            <div class="card-body">
-              <h5 class="card-title">@item.Name</h5>
-            </div>
-            @if (item.Dia != null)
-            {
-              <p>Day: @item.Dia.Name</p>
-            }
-            else
-            {
-              <p>No day assigned</p>
-            }
-           
-            <ul class="list-group list-group-flush">
-              <li class="list-group-item">Season: @item.Season</li>
-              <li class="list-group-item">Episode: @item.ActualEpisode</li>
-              <li class="list-group-item">Total of Episodes: @item.TotalOfEpisode</li>
-            </ul>
-            <div class="card-body">
-               <p>
-              <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-info">Details</a>
-            </p>
-            </div>
-          </div>
-            
-          </div>
-      }
-    </div>
-    <button class="carousel-control-prev" type="button" data-bs-target="#carouselExample" data-bs-slide="prev">
-      <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-      <span class="visually-hidden">Previous</span>
-    </button>
-    <button class="carousel-control-next" type="button" data-bs-target="#carouselExample" data-bs-slide="next">
-      <span class="carousel-control-next-icon" aria-hidden="true"></span>
-      <span class="visually-hidden">Next</span>
-    </button>
-  </div>
-</div>
+<h1>Index</h1>
+
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Name)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Season)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.ActualEpisode)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.TotalOfEpisode)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.NetflixURL)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.ImagePath)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Estado)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.DiaId)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Name)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Season)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.ActualEpisode)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.TotalOfEpisode)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.NetflixURL)
+                </td>
+                <td>
+                    @if (!string.IsNullOrEmpty(item.ImagePath))
+                    {
+                        <img src="@item.ImagePath" alt="@item.Name" style="max-width: 100px; max-height: 100px;" />
+                    }
+                    else
+                    {
+                        <span>No image available</span>
+                    }
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Estado)
+                </td>
+                <td>
+                    @if (item.Dia != null)
+                    {
+                        @Html.DisplayFor(modelItem => item.Dia.Name)
+                    }
+                    else
+                    {
+                        <span>No day assigned</span>
+                    }
+                </td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
+                    <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
+                    <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
