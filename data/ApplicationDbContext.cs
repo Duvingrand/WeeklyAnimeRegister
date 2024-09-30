@@ -13,23 +13,4 @@ public class ApplicationDbContext : DbContext
     // Definición de DbSet para cada modelo
     public DbSet<Serie> Series { get; set; }
     public DbSet<Dias> Dias { get; set; }
-
-
-
-
-    // Configuración adicional del modelo
-    // protected override void OnModelCreating(ModelBuilder modelBuilder)
-    // {
-    //     // Configuración específica para la entidad Serie
-    //     modelBuilder.Entity<Serie>()
-    //         .ToTable("series");
-
-    //     // Configuración específica para la entidad Dias
-    //     modelBuilder.Entity<Dias>()
-    //         .ToTable("Dias");
-
-    //     // Puedes agregar más configuraciones aquí según sea necesario
-
-    //     base.OnModelCreating(modelBuilder);
-    // }
 }

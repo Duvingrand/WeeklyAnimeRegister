@@ -39,6 +39,22 @@ namespace ProyectoPropio.Controllers
             return View(series);
         }
 
+        public async Task<IActionResult> Index2()
+        {
+            var series = await _context.Series
+    .Include(s => s.Dia) // Incluir la entidad Dia
+    .ToListAsync();
+            if (series == null || series.Count <= 0)
+            {
+                return NotFound();
+            }
+            foreach (var serie in series)
+            {
+                serie.ImagePath = $"{Request.Scheme}://{Request.Host}/imgs/{Path.GetFileName(serie.ImagePath)}";
+            }
+            return View(series);
+        }
+
 
 
         // GET: Seried/Details/5
